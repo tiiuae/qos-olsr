@@ -108,7 +108,7 @@ endif
 
 default_target: nmealib library $(PLUGIN_FULLNAME)
 
-$(PLUGIN_FULLNAME): $(OBJS) version-script.txt
+$(PLUGIN_FULLNAME): $(OBJS) version-script.txt nmealib
 ifeq ($(PUD_NMEALIB_STATICALLY_LINKED),)
 ifeq ($(VERBOSE),0)
 	@echo "[LD] $@ (nmealib dynamically linked)"

@@ -70,7 +70,7 @@ LIBS += -lrt
 # Enable the FLAGS and LIBS below for nl80211-support in the LQ plugin 'lq_plugin_ffeth_nl80211'.
 # By default this is not enabled and the plugin will not incorporate the nl80211 data. This avoids
 # breaking builds on Linux systems that do not support it.
-CPPFLAGS += -I/usr/include/libnl3 -Dlinux -DLINUX_NETLINK_ROUTING -DLINUX_NL80211 -DCONFIG_LIBNL30
+CPPFLAGS += -I$(STAGING_DIR)/usr/include/libnl3 -Dlinux -DLINUX_NETLINK_ROUTING -DLINUX_NL80211 -DCONFIG_LIBNL30
 LIBS +=		-lnl-3 -lnl-genl-3 -lnl-route-3
 
 PLUGIN_SONAME ?= lib$(PLUGIN_NAME).so
