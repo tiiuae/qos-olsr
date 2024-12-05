@@ -420,7 +420,60 @@ olsr_calc_tc_edge_entry_etx(struct tc_edge_entry *tc_edge)
     return false;
   }
 
-  tc_edge->cost = olsr_calc_tc_cost(tc_edge);
+  struct ipaddr_str buf1,buf2;
+  //OLSR_PRINTF(1,"Calculating cost from TC set from %s to %s \n",olsr_ip_to_string(&buf1,&tc_edge->tc->addr),olsr_ip_to_string(&buf2,&tc_edge->T_dest_addr));
+
+ olsr_linkcost sampledLC = olsr_calc_tc_cost(tc_edge);
+
+//  const struct lq_ffeth *lq = tc_edge;
+  const struct lq_ffethTC *lq = tc_edge->linkquality;
+  OLSR_PRINTF(1,"In TC- Trend: %d, previous Cost %d, sampled cost  %d, ",lq->valueBandwidth, tc_edge->cost,sampledLC);
+  // if(sampledLC > 4000)
+  //   	{
+  //   		tc_edge->cost= sampledLC;
+  //   	}
+
+  //   // smooth only if there's no trend
+  //   if(lq->valueBandwidth==0){
+  //     tc_edge->cost = (0.99*tc_edge->cost) +(0.01*sampledLC);
+  //   }	
+  //   else{
+  //      tc_edge->cost = sampledLC;
+  //   }
+  //          OLSR_PRINTF(1,"weighted cost: %d \n",tc_edge->cost);
+
+// if the previous cost is 0, set it as the current cost
+  if (tc_edge->cost==0){
+    tc_edge->cost=sampledLC;
+  }
+
+  // if there's a trend, set the neighbor cost as the current cost 
+  // sampledLC is usually in the range up to 10 or 11 based on the max penalty value of 7 and the LQ cost (converges to 1)
+  if(lq->valueBandwidth!=0){
+      tc_edge->cost = sampledLC;
+  }	
+  // else if we don't have a trend, degrade the cost gradually 
+  else{
+
+      // if the current cost is higher than 10.x, set the neighbor cost and the sampledLC
+      if(sampledLC > 41000)
+      {
+        tc_edge->cost= sampledLC;
+      }
+      // if the previous neighbor cost is high, set it to the current value
+      // this is important for when we suddenly drop the sampledLC cost 
+      if(tc_edge->cost >41000)
+      {
+        tc_edge->cost= sampledLC;
+      }
+      // in this case, if the sampled is higher than 10, the neigh cost will be the same value
+      tc_edge->cost = (0.99*tc_edge->cost) +(0.01*sampledLC);
+  }
+
+     OLSR_PRINTF(1,"weighted cost: %f \n",tc_edge->cost*1.0/1024.0);
+
+
+
   return true;
 }
 

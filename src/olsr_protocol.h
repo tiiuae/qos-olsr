@@ -70,7 +70,7 @@ struct olsr;
 
 #define HELLO_INTERVAL        2
 #define REFRESH_INTERVAL      2
-#define TC_INTERVAL           5
+#define TC_INTERVAL           1
 #define MID_INTERVAL          TC_INTERVAL
 #define HNA_INTERVAL          TC_INTERVAL
 
@@ -84,7 +84,7 @@ struct olsr;
  * Default Holding Time (for large scale community networks)
  */
 
-#define NEIGHB_HOLD_TIME      5 * REFRESH_INTERVAL
+#define NEIGHB_HOLD_TIME      5 * REFRESH_INTERVAL //10
 #define TOP_HOLD_TIME         10 * TC_INTERVAL
 #define DUP_HOLD_TIME         30
 #define MID_HOLD_TIME         60 * MID_INTERVAL
@@ -111,6 +111,12 @@ struct olsr;
 #define HIDE_LINK             4
 #define MAX_LINK              4
 
+
+/* 
+  RSSI Range
+*/
+
+#define MAX_RSSI    100
 #define HELLO_LINK_ORDER_ARRAY { UNSPEC_LINK, LOST_LINK, ASYM_LINK, SYM_LINK }
 
 static INLINE const char * linkTypeToString(int type) {

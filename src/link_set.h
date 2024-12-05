@@ -93,6 +93,8 @@ struct link_entry {
 
   int8_t rssi;
 
+  //
+  // int8_t mob_trend;
 
   /* cost of this link */
   olsr_linkcost linkcost;

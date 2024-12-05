@@ -305,7 +305,7 @@ bool olsr_get_mpr_sel_set_size(){
 
 if(mprs_list.next == &mprs_list)
 	{
-		OLSR_PRINTF(1,"my MPR Selectors Set is empty");
+		// OLSR_PRINTF(1,"my MPR Selectors Set is empty");
 		return false;
 	}
 else{

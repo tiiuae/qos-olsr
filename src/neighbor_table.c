@@ -231,7 +231,7 @@ olsr_delete_neighbor_table(const union olsr_ip_addr *neighbor_addr)
   olsr_update_qos(NULL);
   // if the node lost its head, then find an alternative head from the existing ones
   if (find_head)
-    olsr_find_head();
+  olsr_find_head();
   OLSR_PRINTF(1,"delete neighbor, new num is: %d\n",olsr_cnf->neighnum);
   changes_neighborhood = true;
   signal_link_changes(true);
@@ -361,16 +361,23 @@ update_neighbor_status(struct neighbor_entry *entry, int lnk)
         signal_link_changes(true);
     }
     entry->status = SYM;
-  } else {
+  } else {    
     if (entry->status == SYM) {
       changes_neighborhood = true;
       changes_topology = true;
+        //update: tapping here to signal the changes in head
+      if(entry->is_head){
+        OLSR_PRINTF(1,"My head is assymetric now!");
+        changes_in_head_status = true;
+      }
       if (olsr_cnf->tc_redundancy > 1)
         signal_link_changes(true);
     }
     /* else N_status is set to NOT_SYM */
     entry->status = NOT_SYM;
     /* remove neighbor from routing list */
+
+    
   }
 
   return entry->status;

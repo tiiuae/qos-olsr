@@ -489,20 +489,29 @@ olsr_calculate_mpr(void)
 //find head when the node joins in the middle of the calculation period or when it loses its head
 void olsr_find_head(void){
 	OLSR_PRINTF(1,"Finding Existing Cluster head\n");
+  //problem: the previous disconnected head needs its is_mpr and is_head status set to false here
 
 	struct neighbor_entry *a_neighbor, *temp_neighbor;
-	uint16_t max_qos = olsr_cnf->qos;
-	union olsr_ip_addr max_ip = olsr_cnf->main_addr;
-	struct ipaddr_str buf;
-	
+	//uint16_t max_qos = olsr_cnf->qos;
+	//union olsr_ip_addr max_ip = olsr_cnf->main_addr;
+	uint16_t max_qos = 0;
+	union olsr_ip_addr max_ip ;
+  struct ipaddr_str buf;
+	bool head_found=false;
   // loop through all neighbor entries 
 	 OLSR_FOR_ALL_NBR_ENTRIES(a_neighbor) {
-    // check this syntax ? 
     // if the neighbor is not a head continue
-		 if(a_neighbor->is_head==0){
+		 if(a_neighbor->is_head==0 || a_neighbor->status == NOT_SYM){
+      //update: changing the is_mpr and is_head status of the previous disconnected head
+      if(a_neighbor->is_head){
+      a_neighbor->is_mpr = false;
+      a_neighbor->my_head = false;
+      }
+      //update end
       continue;
 		 }
 
+    head_found=true;
 		 OLSR_PRINTF(1,"Head Neighbor: %s with qos: %d \n", olsr_ip_to_string(&buf, &a_neighbor->neighbor_main_addr),a_neighbor->qos);
 		// if the neighbor is a head then check their qos 
 		if (a_neighbor->qos >= max_qos) {
@@ -512,21 +521,33 @@ void olsr_find_head(void){
 
 	}
 	OLSR_FOR_ALL_NBR_ENTRIES_END(a_neighbor);
-	if(max_qos==0)
-	return;
+	// if(max_qos==0)
+	// return;
 	 OLSR_PRINTF(1,"For node: %s with qos: %d ", olsr_ip_to_string(&buf, &olsr_cnf->main_addr),olsr_cnf->qos);
 
-  // if selected neighbor is in the neighbor list, set their mpr and head status 
-	 temp_neighbor = olsr_lookup_neighbor_table(&max_ip);
-	 //cout<<olsr_cnf->main_addr<<" my qos is "<<olsr_cnf->qos<<", ";
-	 if(temp_neighbor != NULL)
-	 {
-	 	struct ipaddr_str buf1;
-	 	 OLSR_PRINTF(1," new head is %s with qos: %d ", olsr_ip_to_string(&buf1, &temp_neighbor->neighbor_main_addr),temp_neighbor->qos);
-		 temp_neighbor->is_mpr = true;
-		 temp_neighbor->my_head = true;
-	}
-	
+  if(head_found){
+      // if selected neighbor is in the neighbor list, set their mpr and head status 
+      temp_neighbor = olsr_lookup_neighbor_table(&max_ip);
+      //cout<<olsr_cnf->main_addr<<" my qos is "<<olsr_cnf->qos<<", ";
+      if(temp_neighbor != NULL)
+      {
+        struct ipaddr_str buf1;
+        OLSR_PRINTF(1," new head is %s with qos: %d ", olsr_ip_to_string(&buf1, &temp_neighbor->neighbor_main_addr),temp_neighbor->qos);
+        temp_neighbor->is_mpr = true;
+        temp_neighbor->my_head = true;
+      }
+
+  }
+  else{
+    olsr_calculate_head();
+  }
+  /*if(olsr_cnf->qos==max_qos && olsr_cnf->is_head !=1 && olsr_cnf->is_head <3){
+			olsr_cnf->is_head =olsr_cnf->is_head+1;
+  }
+    if(olsr_cnf->is_head ==1){
+  olsr_calculate_lq_mpr();
+  }
+*/  
 }
 
 //head calculation
@@ -534,7 +555,7 @@ void
 olsr_calculate_head(void){
 	// find the neighbor with max qos
 	// set the max qos neighbor as mpr.
-	OLSR_PRINTF(1,"Calculating Cluster head\n");
+	OLSR_PRINTF(1,"Calculating Cluster head\n my qos is %d\n",olsr_cnf->qos);
 	
 	struct neighbor_entry *a_neighbor, *temp_neighbor,*temp_neighbor2;
 	uint16_t max_qos = olsr_cnf->qos;
@@ -558,11 +579,24 @@ olsr_calculate_head(void){
         {
           continue;
         }*/
+
+        //update: this is creating a problem
+        //update: The is_mpr and is_head of the not symetric node should be also changed
+        if(a_neighbor->status == NOT_SYM){
+          //changes start:
+          a_neighbor->is_mpr = false;
+          a_neighbor->my_head = false;
+          //changes end:
+          continue;
+        }
+
+        
         if(a_neighbor->my_head){
           prev_head_ip=a_neighbor->neighbor_main_addr;
           max_prev_head_qos=a_neighbor->qos;	 
         }
-        
+        struct ipaddr_str buf3;
+        OLSR_PRINTF(1,"neighbor %s has QoS %d \n",olsr_ip_to_string(&buf3,&a_neighbor->neighbor_main_addr),a_neighbor->qos);
         a_neighbor->is_mpr = false;
         a_neighbor->my_head = false;
         
@@ -570,14 +604,14 @@ olsr_calculate_head(void){
           max_qos = a_neighbor->qos;
           max_ip = a_neighbor->neighbor_main_addr;
         }
-        
       }
 	}
 	OLSR_FOR_ALL_NBR_ENTRIES_END(a_neighbor);
 
 	if(max_qos==0)
 	  return;
-
+  struct ipaddr_str buf2;
+  OLSR_PRINTF(1,"max qos neighbor is: %s with qos: %d\n",olsr_ip_to_string(&buf2,&max_ip),max_qos);
   // check if previous head still exists 
 	 temp_neighbor2 = olsr_lookup_neighbor_table(&prev_head_ip);
 
@@ -616,7 +650,9 @@ olsr_calculate_head(void){
     olsr_cnf->is_head =olsr_cnf->is_head-1;
   }
 
-     
+  // if(olsr_cnf->is_head ==1){
+  // olsr_calculate_lq_mpr();
+  // }
 
 }
 
