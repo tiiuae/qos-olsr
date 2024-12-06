@@ -125,7 +125,6 @@ process_message_neighbors(struct neighbor_entry *neighbor, const struct hello_me
     }
 
     struct ipaddr_str bufff;
-    // OLSR_PRINTF(1,"processing HELLO IP address %s with status %d\n",olsr_ip_to_string(&bufff,& message_neighbors->address ), message_neighbors->status);
 
     // process if the neighbor in the message is a head
     if (((message_neighbors->status == SYM_NEIGH) || (message_neighbors->status == MPR_NEIGH)) || (message_neighbors->status == MPR_HEAD) || (message_neighbors->status == NHEAD) || (message_neighbors->status == TWO_HEAD))
@@ -136,9 +135,7 @@ process_message_neighbors(struct neighbor_entry *neighbor, const struct hello_me
 
       if (two_hop_neighbor_yet != NULL)
       {
-       // OLSR_PRINTF(1, "Not supposed to be here....\n");
-        //OLSR_PRINTF(1, "HELLOOO processing existing 2-hop neighbor IP address %s with status %d\n", olsr_ip_to_string(&bufff, &message_neighbors->address), message_neighbors->status);
-        /* Updating the holding time for this neighbor */
+       /* Updating the holding time for this neighbor */
         olsr_set_timer(&two_hop_neighbor_yet->nbr2_list_timer, message->vtime, OLSR_NBR2_LIST_JITTER, OLSR_TIMER_ONESHOT,
                        &olsr_expire_nbr2_list, two_hop_neighbor_yet, 0);
         two_hop_neighbor = two_hop_neighbor_yet->neighbor_2;
@@ -173,12 +170,11 @@ process_message_neighbors(struct neighbor_entry *neighbor, const struct hello_me
           }
         }
         two_hop_neighbor = olsr_lookup_two_hop_neighbor_table(&message_neighbors->address);
+        //if the node was a two-hop head and its status changed to not head remove it
         if (two_hop_neighbor != NULL)
         {
-         // OLSR_PRINTF(1, "Existing 2-hop neighbor IP address %s with status %d\n", olsr_ip_to_string(&bufff, &message_neighbors->address), message_neighbors->status);
           if (message_neighbors->status < 3)
           { // status is not 1
-           // OLSR_PRINTF(1, "Deleting neighbor \n");
             olsr_delete_two_hop_neighbor_table(two_hop_neighbor);
           }
         }
@@ -204,14 +200,9 @@ process_message_neighbors(struct neighbor_entry *neighbor, const struct hello_me
           two_hop_neighbor->neighbor_2_pointer = 0;
 
           two_hop_neighbor->neighbor_2_addr = message_neighbors->address;
-          // update
 
-         // OLSR_PRINTF(1, "HELLOOO processing 2-hop neighbor IP address %s with status %d\n", olsr_ip_to_string(&bufff, &message_neighbors->address), message_neighbors->status);
-          // update
           if ((message_neighbors->status == MPR_HEAD) || (message_neighbors->status == NHEAD) || (message_neighbors->status == TWO_HEAD))
           {
-            // two_hop_neighbor->is_head = 1;
-           // OLSR_PRINTF(1, "INSERTING 2-hop neighbor IP address %s with status %d\n", olsr_ip_to_string(&bufff, &message_neighbors->address), message_neighbors->status);
             if (message_neighbors->status == TWO_HEAD)
             {
               two_hop_neighbor->is_2hop = false;
@@ -244,7 +235,7 @@ process_message_neighbors(struct neighbor_entry *neighbor, const struct hello_me
           changes_topology = true;
         //  OLSR_PRINTF(1, "Existing 2-hop neighbor IP address %s with status %d\n", olsr_ip_to_string(&bufff, &message_neighbors->address), message_neighbors->status);
           if (message_neighbors->status >= 3)
-          { // status is not 1
+          { 
             linking_this_2_entries(neighbor, two_hop_neighbor, message->vtime);
           }
           else
@@ -537,14 +528,16 @@ deserialize_hello(struct hello_message *hello, const void *ser)
         pkt_get_ipaddress(&curr, &neigh->address);
         struct ipaddr_str bufip;
 
+        neigh->link = EXTRACT_LINK(link_code);
+        neigh->status = EXTRACT_STATUS(link_code);
+     
         if (type == LQ_HELLO_MESSAGE)
         {
 
           olsr_deserialize_hello_lq_pair(&curr, neigh);
         }
-        neigh->link = EXTRACT_LINK(link_code);
-        neigh->status = EXTRACT_STATUS(link_code);
-
+        
+        OLSR_PRINTF(1,"\nProcess package: status: %d\n",neigh->status);
         neigh->next = hello->neighbors;
         hello->neighbors = neigh;
 
@@ -642,6 +635,13 @@ void olsr_hello_tap(struct hello_message *message, struct interface_olsr *in_if,
    * Update link status
    */
   struct link_entry *lnk = update_link_entry(&in_if->ip_addr, from_addr, message, in_if);
+
+
+  //update: Commented the following to check whats making all neighbors not symetric
+  // if(lnk->neighbor->my_head && lnk->neighbor->status==NOT_SYM){
+  //   changes_in_head_status=true;
+  // }
+
 
   /*check alias message->source_addr*/
   if (!ipequal(&message->source_addr, from_addr))
@@ -751,6 +751,10 @@ void olsr_hello_tap(struct hello_message *message, struct interface_olsr *in_if,
   {
   }*/
 
+  // if (neighbor->status != message->status){
+  //     OLSR_PRINTF(1,"Status of the neighbor changed");
+  //     neighbor->status = message->status;      
+  // }
   /* Check willingness */
   if (neighbor->willingness != message->willingness)
   {

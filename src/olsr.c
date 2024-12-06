@@ -81,6 +81,7 @@ bool changes_topology;
 bool changes_neighborhood;
 bool changes_hna;
 bool changes_force;
+bool changes_in_head_status;
 
 /*COLLECT startup sleeps caused by warnings*/
 
@@ -204,6 +205,10 @@ olsr_process_changes(void)
     printf("       *** %s ***\n", olsrd_version);
   }
  
+
+  if(changes_in_head_status){
+    olsr_find_head();
+  }
  // update 
   if (changes_neighborhood) {
    if (olsr_cnf->lq_level < 1) {
@@ -224,7 +229,7 @@ olsr_process_changes(void)
      }
     }
   }
-
+  
   /* calculate the routing table */
   if (changes_neighborhood || changes_topology || changes_hna) {
     olsr_calculate_routing_table(false);
@@ -250,7 +255,7 @@ olsr_process_changes(void)
     olsr_print_neighbor_table();
       
     olsr_print_two_hop_neighbor_table();
-   olsr_print_tc_table();
+    olsr_print_tc_table();
     
     olsr_print_heads_set();
     
@@ -270,6 +275,7 @@ olsr_process_changes(void)
   changes_topology = false;
   changes_hna = false;
   changes_force = false;
+  changes_in_head_status=false;
 }
 
 /**
@@ -609,37 +615,29 @@ olsr_print_is_mpr(void)
 float
 olsr_calculate_qos(void)
 {
-    OLSR_PRINTF(1,"*** calculating qos\n");
+  OLSR_PRINTF(1,"*** calculating qos\n");
   struct link_entry *walker;
   float links=0;
   int count=0;
   float max_link=0;
    
   if((olsr_cnf->neighnum+1)>1){
-    OLSR_FOR_ALL_LINK_ENTRIES(walker) {
-	   // walker->linkcost; 
-    
-      struct neighbor_entry *a_neighbor = walker->neighbor;
-      
+    OLSR_FOR_ALL_LINK_ENTRIES(walker) {    
+
      // to consider if the link is below infinity and stable
-	    //if(walker->linkcost < 4194304 ){
-      //if(walker->neighbor->status == SYM)
-     // {
-      OLSR_PRINTF(1,"the link cost is: %d\n",walker->linkcost);
       if(walker->linkcost < 4194304 )
-      {
-     // if((walker->linkcost/1024.0) <= 13 )
-    // {
+      {     
         // this will result in frequent change in the QoS
         if(walker->dev_linkcost>4000)
         {
           OLSR_PRINTF(1,"unstable link not considering it %d\n",walker->linkcost);
           continue;
-        }
-         
+        }         
+        
         float current_link=((walker->linkcost*1.0/1024.0));
-        OLSR_PRINTF(1,"current link value %f %d\n", current_link,walker->linkcost);
-      
+        
+        OLSR_PRINTF(1,"current link cost %f %d\n", current_link,walker->linkcost);      
+        
         links=links+current_link;
         count=count+1;     
 	    }
@@ -649,13 +647,16 @@ olsr_calculate_qos(void)
 
   double sampled_qos1 =100*(2-atan((links*1.0/count*1.0)-4));
   uint16_t sampled_qos = ceil(sampled_qos1);
-  
-   if(links<1)
-   	sampled_qos=0;
+  double avgLinks= links*1.0/count*1.0;
+  OLSR_PRINTF(1,"average links: %d\n",avgLinks);
+  if(links<1)
+    sampled_qos=0;
 	
   uint16_t new_qos = round((sampled_qos/325.0) * count * 100.0);	
   float tempqos = (0.875*olsr_cnf->qosff) + (0.125*new_qos);
-  OLSR_PRINTF(1,"LQ %f, count %d, new qos %d, sampled qos %d, ff qos %f, temp qos %f  \n",links,count,new_qos,sampled_qos,olsr_cnf->qosff,tempqos);
+    // OLSR_PRINTF(1,"Sum LCs %f, num of neighbors %d, new qos %d, sampled qos %d, prev. qos %f, current qos %f  \n",links,count,new_qos,sampled_qos,olsr_cnf->qosff,tempqos);
+
+  OLSR_PRINTF(1,"Current qos %d , previous qos %f, weighted qos: %f  \n",new_qos,olsr_cnf->qosff,tempqos);
 
  return tempqos;
 }

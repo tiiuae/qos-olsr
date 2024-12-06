@@ -208,6 +208,7 @@ get_neighbor_status(const union olsr_ip_addr *address)
     }
   }
 
+
   return 0;
 }
 
@@ -549,7 +550,7 @@ add_link_entry(const union olsr_ip_addr *local, const union olsr_ip_addr *remote
 #ifdef DEBUG
   {
     struct ipaddr_str localbuf, rembuf;
-    OLSR_PRINTF(1, "Adding %s=>%s to link set\n", olsr_ip_to_string(&localbuf, local), olsr_ip_to_string(&rembuf, remote));
+    // OLSR_PRINTF(1, "Adding %s=>%s to link set\n", olsr_ip_to_string(&localbuf, local), olsr_ip_to_string(&rembuf, remote));
   }
 #endif /* DEBUG */
 
@@ -605,7 +606,7 @@ add_link_entry(const union olsr_ip_addr *local, const union olsr_ip_addr *remote
   new_link->linkcost = LINK_COST_BROKEN;
   
   //OLSR_PRINTF(1, "\n \n *** printing link broken cost %d\n", LINK_COST_BROKEN);
- //new_link->estimated_linkcost = LINK_COST_BROKEN;
+  new_link->estimated_linkcost = LINK_COST_BROKEN;
   // new_link->estimated_linkcost = 0;
  // new_link->dev_linkcost = 50000;
 
@@ -743,9 +744,13 @@ update_link_entry(const union olsr_ip_addr *local, const union olsr_ip_addr *rem
     olsr_process_hysteresis(entry);
     
    }
-  /* Update neighbor */
+  /* Update neighbor */ 
   update_neighbor_status(entry->neighbor, get_neighbor_status(remote));
-
+  // check the status to change when a head becomes not symmetric
+  // int sym_status=update_neighbor_status(entry->neighbor, get_neighbor_status(remote));
+  // if(entry->neighbor->my_head && sym_status==0){
+  //     changes_in_head_status=true;
+  // }
   return entry;
 }
 

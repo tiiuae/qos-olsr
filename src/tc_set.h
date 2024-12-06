@@ -69,6 +69,14 @@ struct tc_edge_entry {
   uint32_t linkquality[0];
 };
 
+struct lq_ffethTC {
+  uint8_t valueLq;
+  uint8_t valueNlq;
+#ifdef LINUX_NL80211
+  uint8_t valueBandwidth;
+  uint8_t valueRSSI;
+#endif
+};
 AVLNODE2STRUCT(edge_tree2tc_edge, struct tc_edge_entry, edge_node);
 
 struct tc_entry {

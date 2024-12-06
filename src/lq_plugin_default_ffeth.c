@@ -458,6 +458,7 @@ default_lq_clear_ffeth_hello(void *target)
   default_lq_clear_ffeth(&local->lq);
   default_lq_clear_ffeth(&local->smoothed_lq);
   local->windowSize = LQ_FFETH_QUICKSTART_INIT;
+  
   for (i = 0; i < LQ_FFETH_WINDOW; i++) {
     local->total[i] = 3;
   }

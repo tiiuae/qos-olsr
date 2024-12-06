@@ -161,28 +161,36 @@ olsr_calculate_lq_mpr(void)
         /* Found a 1-hop neighbor that we haven't previously selected.
          * Use it as MPR only when the 2-hop path through it is better than
          * any existing 1-hop path. */
+        OLSR_PRINTF(1,"The broken cost: %d\n",LINK_COST_BROKEN);
+        struct ipaddr_str buf;
+          OLSR_PRINTF(1, "\nNeighbor: %s\nThree hop head: %d\ncost: %d\n", olsr_ip_to_string(&buf, &neigh2->neighbor_2_addr),neigh2->is_2hop, best);
+
         if ((neigh != NULL) && (best < best_1hop)) {
           neigh->is_mpr = true;
           neigh->skip = true;
 
+          
+
           if (neigh->is_mpr != neigh->was_mpr)
             mpr_changes = true;
+          break; //It means we have found an mpr so ne need for more checks
         }
         //this part allows us to select mprs for 3-hop head when there is no cost for the link
-        /*else if(!neigh2->is_2hop && neigh == NULL)
-        {
-          neigh = neigh2->neighbor_2_nblist.next->neighbor;
-          neigh->is_mpr = true;
-          neigh->skip = true;
-          if (neigh->is_mpr != neigh->was_mpr)
-            mpr_changes = true;
-        }*/
+        // else if(!neigh2->is_2hop) //This is a quick fix to remedy the infinite cost problem
+        // {
+        //   neigh = neigh2->neighbor_2_nblist.next->neighbor;
+        //   neigh->is_mpr = true;
+        //   neigh->skip = true;
+        //   if (neigh->is_mpr != neigh->was_mpr)
+        //     mpr_changes = true;
+        //   break;//It means we have found an mpr so ne need for more checks
+        // }
 
         /* no neighbour found => the requested MPR coverage cannot
          * be satisfied => stop */
 
-        else
-          break;
+       // else
+       //   break;
       }
     }
   }

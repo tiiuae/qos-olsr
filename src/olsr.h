@@ -53,6 +53,7 @@ extern bool changes_topology;
 extern bool changes_neighborhood;
 extern bool changes_hna;
 extern bool changes_force;
+extern bool changes_in_head_status;
 
 extern union olsr_ip_addr all_zero;
 

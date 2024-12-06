@@ -94,8 +94,8 @@ create_lq_hello(struct lq_hello_message *lq_hello, struct interface_olsr *outif)
   // initialize the static fields
 
   lq_hello->comm.type = LQ_HELLO_MESSAGE;
-  lq_hello->comm.vtime = me_to_reltime(outif->valtimes.hello);
-  lq_hello->comm.size = 0;
+  lq_hello->comm.vtime = me_to_reltime(outif->valtimes.hello); //NEIGHB_HOLD_TIME
+  lq_hello->comm.size = 0; 
 
   lq_hello->comm.orig = olsr_cnf->main_addr;
 
