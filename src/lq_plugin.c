@@ -194,53 +194,43 @@ void olsr_deserialize_hello_lq_pair(const uint8_t **curr, struct hello_neighbor 
 {
   assert((const char *)neigh + sizeof(*neigh) >= (const char *)neigh->linkquality);
   active_lq_handler->deserialize_hello_lq(curr, neigh->linkquality);
-  olsr_linkcost sampledLC; 
-  if (neigh->status == TWO_HEAD){
-    neigh->cost = neigh->linkquality[0];
-    struct ipaddr_str buf;
-    OLSR_PRINTF(1, "3 hop head: %s\nThe status: %d", olsr_ip_to_string(&buf, &neigh->address),neigh->status);
-    OLSR_PRINTF(1,"In Plugin- three hop head: %d sampled cost\n",sampledLC);
+  olsr_linkcost sampledLC = active_lq_handler->calc_hello_cost(neigh->linkquality);
+
+  const struct lq_ffeth *lq = neigh->linkquality;
+
+  OLSR_PRINTF(1,"In Plugin- Trend: %d, previous cost %d, sampled cost %d, ",lq->valueBandwidth, neigh->cost,sampledLC);
+
+  // if the previous cost is 0, set it as the current cost
+  if (neigh->cost==0){
+    neigh->cost=sampledLC;
   }
+
+  // if there's a trend, set the neighbor cost as the current cost 
+  // sampledLC is usually in the range up to 10 or 11 based on the max penalty value of 7 and the LQ cost (converges to 1)
+  if(lq->valueBandwidth!=0){
+      neigh->cost = sampledLC;
+  }	
+  // else if we don't have a trend, degrade the cost gradually 
   else{
-      sampledLC = active_lq_handler->calc_hello_cost(neigh->linkquality);
 
+      // if the current cost is higher than 10.x, set the neighbor cost and the sampledLC
+      if(sampledLC > 41000)
+      {
+        neigh->cost= sampledLC;
+      }
+      // if the previous neighbor cost is high, set it to the current value
+      // this is important for when we suddenly drop the sampledLC cost 
+      if(neigh->cost > 41000)
+      {
+        neigh->cost= sampledLC;
+      }
+      // in this case, if the sampled is higher than 10, the neigh cost will be the same value
+      neigh->cost = (0.99*neigh->cost) +(0.01*sampledLC);
+  }
 
-    const struct lq_ffeth *lq = neigh->linkquality;
+     OLSR_PRINTF(1,"weighted cost: %f \n",neigh->cost*1.0/1024.0);
 
-    OLSR_PRINTF(1,"In Plugin- Trend: %d, previous cost %d, sampled cost %d, ",lq->valueBandwidth, neigh->cost,sampledLC);
-
-    // if the previous cost is 0, set it as the current cost
-    if (neigh->cost==0){
-      neigh->cost=sampledLC;
-    }
-
-    // if there's a trend, set the neighbor cost as the current cost 
-    // sampledLC is usually in the range up to 10 or 11 based on the max penalty value of 7 and the LQ cost (converges to 1)
-    if(lq->valueBandwidth!=0){
-        neigh->cost = sampledLC;
-    }	
-    // else if we don't have a trend, degrade the cost gradually 
-    else{
-
-        // if the current cost is higher than 10.x, set the neighbor cost and the sampledLC
-        if(sampledLC > 41000)
-        {
-          neigh->cost= sampledLC;
-        }
-        // if the previous neighbor cost is high, set it to the current value
-        // this is important for when we suddenly drop the sampledLC cost 
-        if(neigh->cost > 41000)
-        {
-          neigh->cost= sampledLC;
-        }
-        // in this case, if the sampled is higher than 10, the neigh cost will be the same value
-        neigh->cost = (0.99*neigh->cost) +(0.01*sampledLC);
-    }
-    }
-
-      OLSR_PRINTF(1,"weighted cost: %f \n",neigh->cost*1.0/1024.0);
-
-    //     neigh->cost = (0.7*neigh->cost) +(0.3*sampledLC);
+  //     neigh->cost = (0.7*neigh->cost) +(0.3*sampledLC);
       // neigh->cost=sampledLC;
 }
 
