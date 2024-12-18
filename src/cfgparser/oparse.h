@@ -35,8 +35,8 @@
    especially those whose name start with YY_ or yy_.  They are
    private implementation details that can be changed or removed.  */
 
-#ifndef YY_YY_SRC_CFGPARSER_OPARSE_H_TMP_INCLUDED
-# define YY_YY_SRC_CFGPARSER_OPARSE_H_TMP_INCLUDED
+#ifndef YY_YY_SRC_CFGPARSER_OPARSE_H_INCLUDED
+# define YY_YY_SRC_CFGPARSER_OPARSE_H_INCLUDED
 /* Debug traces.  */
 #ifndef YYDEBUG
 # define YYDEBUG 0
@@ -175,4 +175,4 @@ extern YYSTYPE yylval;
 int yyparse (void);
 
 
-#endif /* !YY_YY_SRC_CFGPARSER_OPARSE_H_TMP_INCLUDED  */
+#endif /* !YY_YY_SRC_CFGPARSER_OPARSE_H_INCLUDED  */

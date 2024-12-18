@@ -528,16 +528,14 @@ deserialize_hello(struct hello_message *hello, const void *ser)
         pkt_get_ipaddress(&curr, &neigh->address);
         struct ipaddr_str bufip;
 
-        neigh->link = EXTRACT_LINK(link_code);
-        neigh->status = EXTRACT_STATUS(link_code);
-     
         if (type == LQ_HELLO_MESSAGE)
         {
 
           olsr_deserialize_hello_lq_pair(&curr, neigh);
         }
-        
-        OLSR_PRINTF(1,"\nProcess package: status: %d\n",neigh->status);
+        neigh->link = EXTRACT_LINK(link_code);
+        neigh->status = EXTRACT_STATUS(link_code);
+
         neigh->next = hello->neighbors;
         hello->neighbors = neigh;
 
