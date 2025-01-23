@@ -43,64 +43,18 @@
  *
  */
 
-#ifdef __linux__
-#ifdef LINUX_NL80211 /* Optional - not supported on all platforms */
 
-#ifndef LQ_ETX_FFETH_NL80211_
-#define LQ_ETX_FFETH_NL80211_
+#ifndef _MDNS_ADDRESS_H
+#define _MDNS_ADDRESS_H
 
-#include "olsr_types.h"
-#include "lq_plugin.h"
+#include "olsr_types.h"         /* olsr_ip_addr */
+#include "olsrd_plugin.h"             /* union set_plugin_parameter_addon */
+#include "interfaces.h"         /* struct interface_olsr */
 
-#ifdef LINUX_NL80211
-#include <net/ethernet.h>
-#include "nl80211_link_info.h"
-#endif
+#include "list_backport.h"
 
-#define LQ_ALGORITHM_ETX_FFETH_NL80211_NAME "etx_ffeth_nl80211"
+struct TBmfInterface;
 
-#define LQ_FFETH_WINDOW 32
-#define RSSI_WINDOW 16
-#define TREND_WINDOW 10
+int IsMulticast(union olsr_ip_addr *ipAddress);
 
-#define LQ_FFETH_QUICKSTART_INIT 4
-
-struct lq_ffeth {
-  uint8_t valueLq;
-  uint8_t valueNlq;
-#ifdef LINUX_NL80211
-  uint8_t valueBandwidth;
-  uint8_t valueRSSI;
-#endif
-};
-
-struct lq_ffeth_hello {
-  struct lq_ffeth smoothed_lq;
-  struct lq_ffeth lq;
-  uint8_t windowSize, activePtr,twindowSize,tactivePtr,rwindowSize,ractivePtr;
-  uint16_t last_seq_nr;
-  uint16_t missed_hellos;
-  bool perfect_eth;
-  uint16_t received[LQ_FFETH_WINDOW], total[LQ_FFETH_WINDOW];
-  //update
-  uint8_t rssi[RSSI_WINDOW], lqWin[LQ_FFETH_WINDOW];
-  int8_t trend_w[TREND_WINDOW];
-  int trend_counter;
-  // this window is for storing the trend values
-  int trend;
-  float tau;
-};
-
-extern struct lq_handler lq_etx_ffeth_nl80211_handler;
-
-#endif /* LQ_ETX_FFETH_NL80211_ */
-
-#endif /* LINUX_NL80211 */
-#endif /* __linux__ */
-
-/*
- * Local Variables:
- * c-basic-offset: 2
- * indent-tabs-mode: nil
- * End:
- */
+#endif /* _MDNS_ADDRESS_H */

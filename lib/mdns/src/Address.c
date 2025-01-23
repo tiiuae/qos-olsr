@@ -43,64 +43,41 @@
  *
  */
 
-#ifdef __linux__
-#ifdef LINUX_NL80211 /* Optional - not supported on all platforms */
 
-#ifndef LQ_ETX_FFETH_NL80211_
-#define LQ_ETX_FFETH_NL80211_
+#include "Address.h"
 
-#include "olsr_types.h"
-#include "lq_plugin.h"
+/* System includes */
+#include <stddef.h>             /* NULL */
+#include <string.h>             /* strcmp */
+#include <assert.h>             /* assert() */
+#include <netinet/ip.h>         /* struct ip */
+#include <netinet/udp.h>        /* struct udphdr */
 
-#ifdef LINUX_NL80211
-#include <net/ethernet.h>
-#include "nl80211_link_info.h"
-#endif
+/* OLSRD includes */
+#include "defs.h"               /* ipequal */
+#include "olsr_protocol.h"      /* OLSRPORT */
 
-#define LQ_ALGORITHM_ETX_FFETH_NL80211_NAME "etx_ffeth_nl80211"
+/* Plugin includes */
+#include "mdns.h"               /* BMF_ENCAP_PORT */
+#include "NetworkInterfaces.h"  /* TBmfInterface */
 
-#define LQ_FFETH_WINDOW 32
-#define RSSI_WINDOW 16
-#define TREND_WINDOW 10
+/* Whether or not to flood local broadcast packets (e.g. packets with IP
+ * destination 192.168.1.255). May be overruled by setting the plugin
+ * parameter "DoLocalBroadcast" to "no" */
+//int EnableLocalBroadcast = 1;
 
-#define LQ_FFETH_QUICKSTART_INIT 4
+/* -------------------------------------------------------------------------
+ * Function   : IsMulticast
+ * Description: Check if an IP address is a multicast address
+ * Input      : ipAddress
+ * Output     : none
+ * Return     : true (1) or false (0)
+ * Data Used  : none
+ * ------------------------------------------------------------------------- */
+int
+IsMulticast(union olsr_ip_addr *ipAddress)
+{
+  assert(ipAddress != NULL);
 
-struct lq_ffeth {
-  uint8_t valueLq;
-  uint8_t valueNlq;
-#ifdef LINUX_NL80211
-  uint8_t valueBandwidth;
-  uint8_t valueRSSI;
-#endif
-};
-
-struct lq_ffeth_hello {
-  struct lq_ffeth smoothed_lq;
-  struct lq_ffeth lq;
-  uint8_t windowSize, activePtr,twindowSize,tactivePtr,rwindowSize,ractivePtr;
-  uint16_t last_seq_nr;
-  uint16_t missed_hellos;
-  bool perfect_eth;
-  uint16_t received[LQ_FFETH_WINDOW], total[LQ_FFETH_WINDOW];
-  //update
-  uint8_t rssi[RSSI_WINDOW], lqWin[LQ_FFETH_WINDOW];
-  int8_t trend_w[TREND_WINDOW];
-  int trend_counter;
-  // this window is for storing the trend values
-  int trend;
-  float tau;
-};
-
-extern struct lq_handler lq_etx_ffeth_nl80211_handler;
-
-#endif /* LQ_ETX_FFETH_NL80211_ */
-
-#endif /* LINUX_NL80211 */
-#endif /* __linux__ */
-
-/*
- * Local Variables:
- * c-basic-offset: 2
- * indent-tabs-mode: nil
- * End:
- */
+  return IN_MULTICAST(ntohl(ipAddress->v4.s_addr));
+}

@@ -43,64 +43,39 @@
  *
  */
 
-#ifdef __linux__
-#ifdef LINUX_NL80211 /* Optional - not supported on all platforms */
+#ifndef _P2PD_PACKETHISTORY_H
+#define _P2PD_PACKETHISTORY_H
 
-#ifndef LQ_ETX_FFETH_NL80211_
-#define LQ_ETX_FFETH_NL80211_
+/* -------------------------------------------------------------------------
+ * File       : PacketHistory.h
+ * Description: Functions for keeping and accessing the history of processed
+ *              multicast IP packets.
+ * Created    : 29 Jun 2006
+ *
+ * ------------------------------------------------------------------------- */
 
-#include "olsr_types.h"
-#include "lq_plugin.h"
+/* System includes */
+#include <sys/types.h> /* ssize_t */
+#include <sys/times.h> /* clock_t */
 
-#ifdef LINUX_NL80211
-#include <net/ethernet.h>
-#include "nl80211_link_info.h"
-#endif
+#define N_HASH_BITS 15
+#define HISTORY_HASH_SIZE (1u << N_HASH_BITS)
 
-#define LQ_ALGORITHM_ETX_FFETH_NL80211_NAME "etx_ffeth_nl80211"
+/* Time-out of duplicate entries, in milliseconds */
+#define HISTORY_HOLD_TIME 3000
 
-#define LQ_FFETH_WINDOW 32
-#define RSSI_WINDOW 16
-#define TREND_WINDOW 10
-
-#define LQ_FFETH_QUICKSTART_INIT 4
-
-struct lq_ffeth {
-  uint8_t valueLq;
-  uint8_t valueNlq;
-#ifdef LINUX_NL80211
-  uint8_t valueBandwidth;
-  uint8_t valueRSSI;
-#endif
+struct TDupEntry
+{
+  u_int32_t crc32;
+  clock_t timeOut;
+  struct TDupEntry* next;
 };
 
-struct lq_ffeth_hello {
-  struct lq_ffeth smoothed_lq;
-  struct lq_ffeth lq;
-  uint8_t windowSize, activePtr,twindowSize,tactivePtr,rwindowSize,ractivePtr;
-  uint16_t last_seq_nr;
-  uint16_t missed_hellos;
-  bool perfect_eth;
-  uint16_t received[LQ_FFETH_WINDOW], total[LQ_FFETH_WINDOW];
-  //update
-  uint8_t rssi[RSSI_WINDOW], lqWin[LQ_FFETH_WINDOW];
-  int8_t trend_w[TREND_WINDOW];
-  int trend_counter;
-  // this window is for storing the trend values
-  int trend;
-  float tau;
-};
+void InitPacketHistory(void);
+u_int32_t PacketCrc32(unsigned char* ipPkt, ssize_t len);
+u_int32_t Hash(u_int32_t from32);
+void MarkRecentPacket(u_int32_t crc32);
+int CheckAndMarkRecentPacket(u_int32_t crc32);
+void PrunePacketHistory(void*);
 
-extern struct lq_handler lq_etx_ffeth_nl80211_handler;
-
-#endif /* LQ_ETX_FFETH_NL80211_ */
-
-#endif /* LINUX_NL80211 */
-#endif /* __linux__ */
-
-/*
- * Local Variables:
- * c-basic-offset: 2
- * indent-tabs-mode: nil
- * End:
- */
+#endif /* _P2PD_PACKETHISTORY_H */

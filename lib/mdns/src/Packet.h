@@ -43,64 +43,44 @@
  *
  */
 
-#ifdef __linux__
-#ifdef LINUX_NL80211 /* Optional - not supported on all platforms */
 
-#ifndef LQ_ETX_FFETH_NL80211_
-#define LQ_ETX_FFETH_NL80211_
+#ifndef _MDNS_PACKET_H
+#define _MDNS_PACKET_H
 
-#include "olsr_types.h"
-#include "lq_plugin.h"
 
-#ifdef LINUX_NL80211
-#include <net/ethernet.h>
-#include "nl80211_link_info.h"
-#endif
+/* System includes */
+#include <net/if.h>             /* IFNAMSIZ, IFHWADDRLEN */
+#include <sys/types.h>          /* u_int8_t, u_int16_t */
 
-#define LQ_ALGORITHM_ETX_FFETH_NL80211_NAME "etx_ffeth_nl80211"
+/* BMF-encapsulated packets are Ethernet-IP-UDP packets, which start
+ * with a 8-bytes BMF header (struct TEncapHeader), followed by the
+ * encapsulated Ethernet-IP packet itself */
 
-#define LQ_FFETH_WINDOW 32
-#define RSSI_WINDOW 16
-#define TREND_WINDOW 10
+struct TEncapHeader {
+  /* Use a standard Type-Length-Value (TLV) element */
+  u_int8_t type;
+  u_int8_t len;
+  u_int16_t reserved;                  /* Always 0 */
+  u_int32_t crc32;
+} __attribute__ ((__packed__));
 
-#define LQ_FFETH_QUICKSTART_INIT 4
+#define ENCAP_HDR_LEN ((int)sizeof(struct TEncapHeader))
+#define BMF_ENCAP_TYPE 1
+#define BMF_ENCAP_LEN 6
 
-struct lq_ffeth {
-  uint8_t valueLq;
-  uint8_t valueNlq;
-#ifdef LINUX_NL80211
-  uint8_t valueBandwidth;
-  uint8_t valueRSSI;
-#endif
-};
+struct TSaveTtl {
+  u_int8_t ttl;
+  u_int16_t check;
+} __attribute__ ((__packed__));
 
-struct lq_ffeth_hello {
-  struct lq_ffeth smoothed_lq;
-  struct lq_ffeth lq;
-  uint8_t windowSize, activePtr,twindowSize,tactivePtr,rwindowSize,ractivePtr;
-  uint16_t last_seq_nr;
-  uint16_t missed_hellos;
-  bool perfect_eth;
-  uint16_t received[LQ_FFETH_WINDOW], total[LQ_FFETH_WINDOW];
-  //update
-  uint8_t rssi[RSSI_WINDOW], lqWin[LQ_FFETH_WINDOW];
-  int8_t trend_w[TREND_WINDOW];
-  int trend_counter;
-  // this window is for storing the trend values
-  int trend;
-  float tau;
-};
+int IsIpFragment(unsigned char *ipPacket);
+u_int16_t GetIpTotalLength(unsigned char *ipPacket);
+unsigned int GetIpHeaderLength(unsigned char *ipPacket);
+u_int8_t GetTtl(unsigned char *ipPacket);
+void SaveTtlAndChecksum(unsigned char *ipPacket, struct TSaveTtl *sttl);
+void RestoreTtlAndChecksum(unsigned char *ipPacket, struct TSaveTtl *sttl);
+void DecreaseTtlAndUpdateHeaderChecksum(unsigned char *ipPacket);
+struct ip *GetIpHeader(unsigned char *encapsulationUdpData);
+unsigned char *GetIpPacket(unsigned char *encapsulationUdpData);
 
-extern struct lq_handler lq_etx_ffeth_nl80211_handler;
-
-#endif /* LQ_ETX_FFETH_NL80211_ */
-
-#endif /* LINUX_NL80211 */
-#endif /* __linux__ */
-
-/*
- * Local Variables:
- * c-basic-offset: 2
- * indent-tabs-mode: nil
- * End:
- */
+#endif /* _MDNS_PACKET_H */

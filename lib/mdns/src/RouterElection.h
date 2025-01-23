@@ -43,64 +43,50 @@
  *
  */
 
-#ifdef __linux__
-#ifdef LINUX_NL80211 /* Optional - not supported on all platforms */
+#ifndef _ROUTER_ELECTION_H_
+#define _ROUTER_ELECTION_H_
 
-#ifndef LQ_ETX_FFETH_NL80211_
-#define LQ_ETX_FFETH_NL80211_
+#include <netinet/in.h>
 
-#include "olsr_types.h"
-#include "lq_plugin.h"
+#define ELECTION_TIMER		15
+#define HELLO_TIMER		20
+#define INIT_TIMER		1
+#define ENTRYTTL		10
 
-#ifdef LINUX_NL80211
-#include <net/ethernet.h>
-#include "nl80211_link_info.h"
-#endif
+struct RtElHelloPkt{
+  char head[4]; //"$REP"
+  int ipFamily;
+  union olsr_ip_addr router_id;
+  uint8_t network_id;
+} __attribute__((__packed__));
 
-#define LQ_ALGORITHM_ETX_FFETH_NL80211_NAME "etx_ffeth_nl80211"
+struct RouterListEntry{
+  struct in_addr router_id;
+  uint8_t network_id;
+  int ttl;
+  int skfd;
 
-#define LQ_FFETH_WINDOW 32
-#define RSSI_WINDOW 16
-#define TREND_WINDOW 10
-
-#define LQ_FFETH_QUICKSTART_INIT 4
-
-struct lq_ffeth {
-  uint8_t valueLq;
-  uint8_t valueNlq;
-#ifdef LINUX_NL80211
-  uint8_t valueBandwidth;
-  uint8_t valueRSSI;
-#endif
+  struct list_entity list;
 };
 
-struct lq_ffeth_hello {
-  struct lq_ffeth smoothed_lq;
-  struct lq_ffeth lq;
-  uint8_t windowSize, activePtr,twindowSize,tactivePtr,rwindowSize,ractivePtr;
-  uint16_t last_seq_nr;
-  uint16_t missed_hellos;
-  bool perfect_eth;
-  uint16_t received[LQ_FFETH_WINDOW], total[LQ_FFETH_WINDOW];
-  //update
-  uint8_t rssi[RSSI_WINDOW], lqWin[LQ_FFETH_WINDOW];
-  int8_t trend_w[TREND_WINDOW];
-  int trend_counter;
-  // this window is for storing the trend values
-  int trend;
-  float tau;
+struct RouterListEntry6{
+  struct in6_addr router_id;
+  uint8_t network_id;
+  int ttl;
+  int skfd;
+
+  struct list_entity list;
 };
 
-extern struct lq_handler lq_etx_ffeth_nl80211_handler;
+int UpdateRouterList (struct RouterListEntry *listEntry);	//update router list
+int UpdateRouterList6 (struct RouterListEntry6 *listEntry6);
+int ParseElectionPacket (struct RtElHelloPkt *rcvPkt, struct RouterListEntry *listEntry, int skfd);	//used to parse a received 
+int ParseElectionPacket6 (struct RtElHelloPkt *rcvPkt, struct RouterListEntry6 *listEntry6, int skfd);	//packet into a list entry
+int InitRouterList (void *foo __attribute__ ((unused)));
+void helloTimer (void *foo __attribute__ ((unused)));
+void electTimer (void *foo __attribute__ ((unused)));
+void initTimer (void *foo __attribute__ ((unused)));
+int set_Network_ID(const char *Network_ID, void *data __attribute__ ((unused)), set_plugin_parameter_addon addon __attribute__ ((unused)));
 
-#endif /* LQ_ETX_FFETH_NL80211_ */
+#endif
 
-#endif /* LINUX_NL80211 */
-#endif /* __linux__ */
-
-/*
- * Local Variables:
- * c-basic-offset: 2
- * indent-tabs-mode: nil
- * End:
- */

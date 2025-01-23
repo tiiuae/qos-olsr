@@ -178,7 +178,7 @@ static int parse_nl80211_message(struct nl_msg *msg, void *arg) {
 	}
 
 	if (station_info[NL80211_STA_INFO_SIGNAL]) {
-		signal = nla_get_u8(station_info[NL80211_STA_INFO_SIGNAL]);
+		signal = nla_get_u8(station_info[NL80211_STA_INFO_SIGNAL_AVG]);
 	}
 	if (rate_info[NL80211_RATE_INFO_BITRATE]) {
 		bandwidth = nla_get_u16(rate_info[NL80211_RATE_INFO_BITRATE]);
@@ -469,10 +469,13 @@ void nl80211_link_info_get(void) {
 
 	OLSR_FOR_ALL_LINK_ENTRIES(link) {
 		lq_ffeth = (struct lq_ffeth_hello *) link->linkquality;
-		lq_ffeth->lq.valueBandwidth = 0;
+		//lq_ffeth->lq.valueBandwidth = 0;
 		lq_ffeth->lq.valueRSSI = 0;
-		lq_ffeth->smoothed_lq.valueBandwidth = 0;
+	//	lq_ffeth->smoothed_lq.valueBandwidth = 0;
 		lq_ffeth->smoothed_lq.valueRSSI = 0;
+			// OLSR_PRINTF(1,"Previous RSSI: %d ",lq_ffeth->smoothed_lq.valueRSSI );
+		int sum_rssi=0,count=0;
+		uint8_t avg_rssi=0;
 
 		if (mac_of_neighbor(link, mac_address)) {
 			if ((lq_data = find_lq_nl80211_data_by_mac(nl80211_list, mac_address)) != NULL) {
@@ -480,33 +483,92 @@ void nl80211_link_info_get(void) {
 				penalty_signal = signal_to_quality(lq_data->signal);
 
 				link->rssi = lq_data->signal;
-				OLSR_PRINTF(1,"The SIGNAL value is: %d\n",lq_data->signal);
-//////////////////////Write signal to file //////////////////////////
-	/*struct ipaddr_str bufxxx,buffile;
-	FILE *fptr;	
-	char filename[100] = "rssi.txt";
-	sprintf(filename,"rssi_%s.txt",olsr_ip_to_string(&buffile, &link->neighbor_iface_addr));
-	
-	const char* filename2 = (const char*) filename;
-	fptr = fopen(filename2,"a");
-	
-	fprintf(fptr,"%s %s %d %d %d \n",olsr_wallclock_string(),olsr_ip_to_string(&bufxxx, &link->neighbor_iface_addr),link->rssi,lq_ffeth->smoothed_lq.valueLq,lq_ffeth->smoothed_lq.valueNLq);
-	fclose(fptr);*/
-//////////////////////////////////////////////////////////////////
+				// OLSR_PRINTF(1,"The SIGNAL value is: %d\n",lq_data->signal);
+				
+				//////////////////////Write signal to file //////////////////////////
+					/*struct ipaddr_str bufxxx,buffile;
+					FILE *fptr;	
+					char filename[100] = "rssi.txt";
+					sprintf(filename,"rssi_%s.txt",olsr_ip_to_string(&buffile, &link->neighbor_iface_addr));
+					
+					const char* filename2 = (const char*) filename;
+					fptr = fopen(filename2,"a");
+					
+					fprintf(fptr,"%s %s %d %d %d \n",olsr_wallclock_string(),olsr_ip_to_string(&bufxxx, &link->neighbor_iface_addr),link->rssi,lq_ffeth->smoothed_lq.valueLq,lq_ffeth->smoothed_lq.valueNLq);
+					fclose(fptr);*/
+				//////////////////////////////////////////////////////////////////
 
 
-				lq_ffeth->lq.valueBandwidth = penalty_bandwidth;
-				lq_ffeth->lq.valueRSSI = penalty_signal;
-				//OLSR_PRINTF(1,"Info RSSI %d\n \n", lq_ffeth->lq.valueRSSI);
-				lq_ffeth->smoothed_lq.valueBandwidth = penalty_bandwidth;
-				lq_ffeth->smoothed_lq.valueRSSI = penalty_signal;
-				//OLSR_PRINTF(1,"Info RSSI 2 %d\n \n", lq_ffeth->lq.valueRSSI);
+			// penalty signal has the current RSSI value
+			
+			OLSR_PRINTF(1,"Value to add to valueRSSI: %d ",link->rssi*-1);
+			if(link->rssi * -1 < 100){
+				sum_rssi=link->rssi * -1;
+				count=1;
+			}
+			// if ( link)
+			for(int i=lq_ffeth->rwindowSize-5; i<lq_ffeth->rwindowSize-1; i++)
+			{
+			uint8_t ptr = (lq_ffeth->ractivePtr+1+i)%lq_ffeth->rwindowSize;
+			OLSR_PRINTF(1,"%d, ",lq_ffeth->rssi[ptr]);
+				if(lq_ffeth->rssi[ptr]!=0){
+					sum_rssi=sum_rssi+lq_ffeth->rssi[ptr];
+				count++;
+				}
+			}
+			float avg_r ;
+			if(count!=0)
+			{
+			 avg_r =(sum_rssi*1.0)/(count*1.0);
+				avg_rssi=(int)round(avg_r);
+			}
+
+
+			// if link RSSI is negative, which should be always the case, set the avg RSSI in it instead of the sampled RSSI since this will be propagated to other nodes
+			if (link->rssi<0 && link->rssi >-100){
+				 lq_ffeth->lq.valueRSSI = link->rssi * -1;
+				 lq_ffeth->smoothed_lq.valueRSSI = link->rssi * -1;
+				OLSR_PRINTF(1,"avg rssi double %f average rssi = %d \n",avg_r,avg_rssi);
+
+				//lq_ffeth->lq.valueRSSI = avg_rssi;
+				//lq_ffeth->smoothed_lq.valueRSSI = avg_rssi;
+			}
+	
 
 				olsr_syslog(OLSR_LOG_INFO, "Apply 802.11: iface(%s) neighbor(%s) bandwidth(%dMb = %d) rssi(%ddBm = %d)",
 						link->if_name, ether_ntoa((struct ether_addr *)mac_address),
 						lq_data->bandwidth / 10, penalty_bandwidth, lq_data->signal, penalty_signal);
 			} else
 				olsr_syslog(OLSR_LOG_INFO, "NO match ;-(!");
+		}
+
+		if(lq_ffeth->smoothed_lq.valueRSSI==0){
+			OLSR_PRINTF(1,"Couldn't read RSSI value, using previous 5 values");
+			count = 0;
+			sum_rssi = 0;
+			for(int i=lq_ffeth->rwindowSize-6; i<lq_ffeth->rwindowSize-1; i++)
+			{
+				uint8_t ptr = (lq_ffeth->ractivePtr+1+i)%lq_ffeth->rwindowSize;
+				OLSR_PRINTF(1,"%d, ",lq_ffeth->rssi[ptr]);
+				if(lq_ffeth->rssi[ptr]!=0&& lq_ffeth->rssi[ptr]<MAX_RSSI){
+					sum_rssi=sum_rssi+lq_ffeth->rssi[ptr];
+					count++;
+				}
+			}
+			
+			float avg_r ;
+			avg_rssi = 0;
+
+			if(count!=0)
+			{
+			 	avg_r =(sum_rssi*1.0)/(count*1.0);
+				avg_rssi=(int)round(avg_r);
+			}
+			OLSR_PRINTF(1,"average rssi = %d \n",avg_rssi);
+
+			// if link RSSI is negative, which should be always the case, set the avg RSSI in it instead of the sampled RSSI since this will be propagated to other nodes
+				lq_ffeth->lq.valueRSSI = avg_rssi;
+				lq_ffeth->smoothed_lq.valueRSSI = avg_rssi;
 		}
 	} OLSR_FOR_ALL_LINK_ENTRIES_END(link)
 
