@@ -75,6 +75,8 @@ struct lq_ffethTC {
 #ifdef LINUX_NL80211
   uint8_t valueBandwidth;
   uint8_t valueRSSI;
+  uint8_t prediction;
+
 #endif
 };
 AVLNODE2STRUCT(edge_tree2tc_edge, struct tc_edge_entry, edge_node);

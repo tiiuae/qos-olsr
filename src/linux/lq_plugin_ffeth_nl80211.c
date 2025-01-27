@@ -130,7 +130,7 @@ lq_ffeth_nl80211_handle_lqchange(void)
   struct link_entry *link;
 
   bool triggered = false;
-  OLSR_PRINTF(1,"In handle change ---\n ");
+  // OLSR_PRINTF(1,"In handle change ---\n ");
   OLSR_FOR_ALL_LINK_ENTRIES(link)
   {
     bool relevant = false;
@@ -190,10 +190,10 @@ lq_ffeth_nl80211_handle_lqchange(void)
       memcpy(&lq->smoothed_lq, &lq->lq, sizeof(struct lq_ffeth));
 
       struct ipaddr_str buflink;
-      OLSR_PRINTF(1, "Cost for %s", olsr_ip_to_string(&buflink, &link->neighbor_iface_addr));
+      // OLSR_PRINTF(1, "Cost for %s", olsr_ip_to_string(&buflink, &link->neighbor_iface_addr));
       olsr_linkcost sampledLC = lq_calc_cost_ffeth_nl80211(&lq->smoothed_lq);
 
-      OLSR_PRINTF(1,"In NL80211 Relevant- Trend: %d, previous cost %d, sampled cost %d, ",lq->smoothed_lq.valueBandwidth, link->linkcost,sampledLC);
+      // OLSR_PRINTF(1,"In NL80211 Relevant- Trend: %d, previous cost %d, sampled cost %d, ",lq->smoothed_lq.valueBandwidth, link->linkcost,sampledLC);
     
       triggered = true;
 
@@ -203,7 +203,7 @@ lq_ffeth_nl80211_handle_lqchange(void)
 
         // if there's a trend, set the neighbor cost as the current cost 
         // sampledLC is usually in the range up to 10 or 11 based on the max penalty value of 7 and the LQ cost (converges to 1)
-        if(lq->smoothed_lq.valueBandwidth!=0){
+        if((lq->smoothed_lq.valueBandwidth & 0x03)!=1){
               link->linkcost = sampledLC;
             }
         // else if we don't have a trend, degrade the cost gradually 
@@ -224,7 +224,7 @@ lq_ffeth_nl80211_handle_lqchange(void)
             link->linkcost = (0.99*link->linkcost) +(0.01*sampledLC);
         }
 
-          OLSR_PRINTF(1,"weighted cost: %f \n",link->linkcost*1.0/1024.0);
+          // OLSR_PRINTF(1,"weighted cost: %f \n",link->linkcost*1.0/1024.0);
 
 
 
@@ -254,10 +254,10 @@ lq_ffeth_nl80211_handle_lqchange(void)
     memcpy(&lq->smoothed_lq, &lq->lq, sizeof(struct lq_ffeth));
 
     struct ipaddr_str buflink;
-    OLSR_PRINTF(1, "Cost for %s ", olsr_ip_to_string(&buflink, &link->neighbor_iface_addr));
+    // OLSR_PRINTF(1, "Cost for %s ", olsr_ip_to_string(&buflink, &link->neighbor_iface_addr));
     olsr_linkcost sampledLC = lq_calc_cost_ffeth_nl80211(&lq->smoothed_lq);
 
-      OLSR_PRINTF(1,"In NL80211 Triggered- Trend: %d, previous Cost %d, sampled cost %d, ",lq->smoothed_lq.valueBandwidth, link->linkcost,sampledLC);
+      // OLSR_PRINTF(1,"In NL80211 Triggered- Trend: %d, previous Cost %d, sampled cost %d, ",lq->smoothed_lq.valueBandwidth, link->linkcost,sampledLC);
    
     if (link->linkcost==0){
       link->linkcost=sampledLC;
@@ -265,7 +265,7 @@ lq_ffeth_nl80211_handle_lqchange(void)
 
     // if there's a trend, set the neighbor cost as the current cost 
     // sampledLC is usually in the range up to 10 or 11 based on the max penalty value of 7 and the LQ cost (converges to 1)
-    if(lq->smoothed_lq.valueBandwidth!=0){
+    if((lq->smoothed_lq.valueBandwidth & 0x03)!=1){
         link->linkcost = sampledLC;
     }	
     // else if we don't have a trend, degrade the cost gradually 
@@ -286,7 +286,7 @@ lq_ffeth_nl80211_handle_lqchange(void)
         link->linkcost = (0.99*link->linkcost) +(0.01*sampledLC);
     }
 
-          OLSR_PRINTF(1,"weighted cost: %f \n",link->linkcost*1.0/1024.0);
+          // OLSR_PRINTF(1,"weighted cost: %f \n",link->linkcost*1.0/1024.0);
 
 
   }
@@ -369,6 +369,9 @@ lq_ffeth_nl80211_timer(void __attribute__((unused)) * context)
 
     // initialize the trend_counter to zero at quick start 
     if(tlq->twindowSize ==LQ_FFETH_QUICKSTART_INIT){
+      tlq->trend_prev = -2;
+      tlq->bufferPtr = 0;
+
       tlq->trend_counter=0;
     }
 
@@ -468,31 +471,31 @@ lq_ffeth_nl80211_timer(void __attribute__((unused)) * context)
 
     // what we want is to avg the prev last 5 entries and put them in the new rssi window
 
-    OLSR_PRINTF(1,"Value to add to the full RSSI window: %d \n",MAX_RSSI);
+    // OLSR_PRINTF(1,"Value to add to the full RSSI window: %d \n",MAX_RSSI);
     // we start from the current rssi value and add the previous 4 values 
 	  int sum_rssi=0, count=0;
     uint8_t avg_rssi=0;
     // only when negative RSSI are being read
     if(link->rssi <0){
-
+        // OLSR_PRINTF(1,"/n New RSSI: %d\n",link->rssi);
         /* enlarge window if still in quickstart phase */
         if (tlq->rwindowSize < rssi_lq_window)
         {
           tlq->rwindowSize++;
         }
-        OLSR_PRINTF(1,"rssi wnd size = %d\n", tlq->rwindowSize);
+        // OLSR_PRINTF(1,"rssi wnd size = %d\n", tlq->rwindowSize);
         // only for values above -100  since the current threshold is 
          if((link->rssi*-1)<MAX_RSSI){
           sum_rssi=link->rssi*-1;
           count=1;
          }
         
-        OLSR_PRINTF(1,"%d, ",sum_rssi);
+        // OLSR_PRINTF(1,"%d, ",sum_rssi);
       
         for(int i=tlq->rwindowSize-5; i<tlq->rwindowSize-1; i++)
         {
           uint8_t ptr = (tlq->ractivePtr+1+i)%tlq->rwindowSize;
-          OLSR_PRINTF(1,"%d, ",tlq->rssi[ptr]);
+          // OLSR_PRINTF(1,"%d, ",tlq->rssi[ptr]);
           if(tlq->rssi[ptr]!=0 && tlq->rssi[ptr]<MAX_RSSI){
             sum_rssi=sum_rssi+tlq->rssi[ptr];
             count++;
@@ -509,7 +512,7 @@ lq_ffeth_nl80211_timer(void __attribute__((unused)) * context)
 
         tlq->rssi[tlq->ractivePtr] = avg_rssi;
         
-        OLSR_PRINTF(1,"\n average rssi = %d \n",avg_rssi);
+        // OLSR_PRINTF(1,"\n average rssi = %d \n",avg_rssi);
     }
     // OLSR_PRINTF(1,"printing rssi to check for 250 %d ",tlq->rssi[tlq->activePtr]);
 
@@ -524,14 +527,14 @@ lq_ffeth_nl80211_timer(void __attribute__((unused)) * context)
     int sumconc = 0;
     int sumdis = 0;
     int diff=2;
-    OLSR_PRINTF(1, "Full RSSI window: ");
+    // OLSR_PRINTF(1, "Full RSSI window: ");
 
     int samplesNo = 0;
     for (int i = 0; i < tlq->rwindowSize - 1; i++)
     {
 
       uint8_t ptr = (tlq->ractivePtr + 1 + i) % tlq->rwindowSize;
-      OLSR_PRINTF(1, "%d, ", tlq->rssi[ptr]);
+      // OLSR_PRINTF(1, "%d, ", tlq->rssi[ptr]);
 
       if (tlq->rssi[ptr] == 0)
         continue;
@@ -559,7 +562,7 @@ lq_ffeth_nl80211_timer(void __attribute__((unused)) * context)
       sumconc += concordants;
       sumdis += discordants;
     }
-    OLSR_PRINTF(1, "\n");
+    // OLSR_PRINTF(1, "\n");
 
     // float tau = (1.0 * (sumconc - sumdis)) / (1.0 * (sumconc + sumdis));
 
@@ -602,14 +605,14 @@ lq_ffeth_nl80211_timer(void __attribute__((unused)) * context)
     }
 
     // for trend to be determined based on the window of trends
-    OLSR_PRINTF(1, "trend window:");
+    // OLSR_PRINTF(1, "trend window:");
     int maj_trend = 0;
     int p_count=0;
     int n_count=0;
     for (int i = 0; i < tlq->twindowSize; i++)
     {
       uint8_t ptr = (tlq->tactivePtr + 1 + i) % tlq->twindowSize;
-      OLSR_PRINTF(1, "%d, ", tlq->trend_w[ptr]);
+      // OLSR_PRINTF(1, "%d, ", tlq->trend_w[ptr]);
       // this is adding the trend with the sign, which makes moving away and towards cancel each other
       maj_trend = maj_trend + abs(tlq->trend_w[ptr]);
       if(tlq->trend_w[ptr]>0){
@@ -620,7 +623,7 @@ lq_ffeth_nl80211_timer(void __attribute__((unused)) * context)
       }
     }
 
-    OLSR_PRINTF(1, "\n");
+    // OLSR_PRINTF(1, "\n");
 
     if (abs(maj_trend) >= tlq->twindowSize/2)
     {
@@ -635,10 +638,73 @@ lq_ffeth_nl80211_timer(void __attribute__((unused)) * context)
       trend = 0;
     }
 
+
+    if (tlq->trend_prev == -2){
+      tlq->trend_prev = trend;
+      tlq->tau_prev = tau;
+    }
+    else{
+      if(tlq->bufferPtr == BUFFER_WINDOW){
+        // OLSR_PRINTF(1,"\nReseting the pointer!\n");
+        tlq->trend_prev = trend;
+        tlq->tau_prev = tau;
+        tlq->bufferPtr = 0;
+      }
+      else if((abs(tlq->trend_prev) - abs(trend))>0){
+        // OLSR_PRINTF(1,"\n A change from 1 to 0!\n");
+        tlq->trend_buffer[tlq->bufferPtr] = trend;
+        tlq->tau_buffer[tlq->bufferPtr] = tau;
+        trend = tlq->trend_prev;
+        tau = tlq->tau_prev;
+
+        // tlq->trend_prev = tlq->trend_buffer[bufferPtr]
+        // tlq->tau_prev = tlq->tau_buffer[bufferPtr]
+        
+        tlq->bufferPtr++;
+
+        // if(tlq->buffer)
+        //make sure we are not at the end of the buffer counter 
+      }
+      else if (tlq->trend_prev  == trend && ((tau>0 && tlq->tau_prev<0) || (tau<0 && tlq->tau_prev>0))){
+        // OLSR_PRINTF(1,"\n A change from 1 to -1 or vise versa!\n");
+
+        tlq->trend_buffer[tlq->bufferPtr] = trend;
+        tlq->tau_buffer[tlq->bufferPtr] = tau;
+        trend = tlq->trend_prev;
+        tau = tlq->tau_prev;
+
+        // tlq->trend_prev = tlq->trend_buffer[bufferPtr]
+        // tlq->tau_prev = tlq->tau_buffer[bufferPtr]
+        
+        tlq->bufferPtr++;
+
+        // if(tlq->buffer)
+        //make sure we are not at the end of the buffer counter 
+        // if (tlq->bufferPtr < BUFFER_WINDOW){
+        //   tlq->trend_buffer[bufferPtr] = trend;
+        //   tlq->tau_buffer[bufferPtr] = tau;
+        //   trend = tlq->trend_prev;
+        //   tau = tlq->tau_prev;
+
+        //   tlq->trend_prev = tlq->trend_buffer[bufferPtr]
+        //   tlq->tau_prev = tlq->tau_buffer[bufferPtr]
+        //   tlq->bufferPtr++;
+        // }
+      }
+      else{
+        tlq->trend_prev = trend;
+        tlq->tau_prev = tau;
+        tlq->bufferPtr = 0;
+      }
+
+    }
+
+
+
     // Save the tau and trend in valueBandwidth uint8
     // 1 bit(least significant bit) for sign and 7 bits for tau
     // valueBandwidth is 0 if trend is 0, otherwise it contains the value of tau and its sign.
-    uint8_t trend_and_tau = 0, modified_tau = 0, const_one = 1;
+    uint8_t trend_and_tau = 0, modified_tau = 0, const_one = 4;
 
     if (trend == 0)
     {
@@ -647,17 +713,21 @@ lq_ffeth_nl80211_timer(void __attribute__((unused)) * context)
     else if (trend == 1)
     {
       // if negative don't add anything
-      OLSR_PRINTF(1,"Setting trend based on sign positive trends %d while negative trends %d",p_count,n_count);
+      // OLSR_PRINTF(1,"Setting trend based on sign positive trends %d while negative trends %d",p_count,n_count);
       if (p_count >n_count)
       {
         trend_and_tau = trend_and_tau + const_one;
       }
       if (tau < 0)
         tau = tau * -1.0;
-      modified_tau = ((uint8_t)(tau * 127));
-      modified_tau = modified_tau << 1;
+      modified_tau = ((uint8_t)(tau * 32.0));
+      modified_tau = modified_tau << 3;
       trend_and_tau = modified_tau + trend_and_tau;
     }
+    trend_and_tau = trend_and_tau + get_prediction(&(link->neighbor_iface_addr));
+    // OLSR_PRINTF(1,"The tau i am printing: %.3f\n",tau);
+    // OLSR_PRINTF(1,"The trend i am printing: %d\n",trend);
+    // OLSR_PRINTF(1,"The trend and tau: %d\n",trend_and_tau);
 
     // if trend (which is majority) == 0 and sampled (last added to window) == 0, or trend == 1 and maj_trend > window/2 
     // otherwise trend == 0 and maj >= windo/2 or trend == 1 and maj < window/2 don't set 
@@ -666,7 +736,7 @@ lq_ffeth_nl80211_timer(void __attribute__((unused)) * context)
         tlq->smoothed_lq.valueBandwidth = trend_and_tau;
     }
     struct ipaddr_str bufprint;
-    OLSR_PRINTF(1, " Calculating trend: %d, tau: %.3f for link: %s\n", trend, tau, olsr_ip_to_string(&bufprint, &link->neighbor_iface_addr));
+    // OLSR_PRINTF(1, " Calculating trend: %d, tau: %.3f for link: %s\n", trend, tau, olsr_ip_to_string(&bufprint, &link->neighbor_iface_addr));
 
     // OLSR_PRINTF(1,"RSSI Window: %d, %d\n",link->rssi,tlq->rssi[tlq->activePtr]);
     // OLSR_PRINTF(1,"LQ Window: %d, %d\n",tlq->lq.valueLq, tlq->lqWin[tlq->activePtr]);
@@ -744,6 +814,7 @@ lq_calc_cost_ffeth_nl80211(const void *ptr)
 {
   const struct lq_ffeth *lq = ptr;
   // extract the value and sign of tau of
+  uint8_t prediction;
   uint8_t sign, atau;
   float tauf;
   if (lq->valueBandwidth == 0)
@@ -752,14 +823,16 @@ lq_calc_cost_ffeth_nl80211(const void *ptr)
   }
   else
   {
-    sign = lq->valueBandwidth & 0x01;
-    atau = (lq->valueBandwidth & 0xFE) >> 1;
-    tauf = (float)(1.0 * atau / 127.0);
+    sign = lq->valueBandwidth & 0x04;
+    atau = (lq->valueBandwidth & 0xF8) >> 3;
+    tauf = (float)(1.0 * atau / 32.0);
     if (sign == 0)
     {
       tauf = tauf * -1.0;
     }
   }
+  prediction = lq->valueBandwidth & 0x03;
+  OLSR_PRINTF(1,"The predition I got from the message: %d\n",prediction);
 
   olsr_linkcost cost;
   bool ether;
@@ -793,7 +866,7 @@ lq_calc_cost_ffeth_nl80211(const void *ptr)
 
 #ifdef LINUX_NL80211
   cost = fpmidiv(itofpm(255 * 255), lq_int * nlq_int); // 1 / (LQ * NLQ)
-  OLSR_PRINTF(1, "\n LQ cost: %.3f, ", fpmtod(cost));
+  // OLSR_PRINTF(1, "\n LQ cost: %.3f, ", fpmtod(cost));
 
 #else
   cost = fpmidiv(itofpm(255 * 255), lq_int * nlq_int); // 1 / (LQ * NLQ)
@@ -806,26 +879,35 @@ lq_calc_cost_ffeth_nl80211(const void *ptr)
 
 
   // we are adding a penalty based on the normalized average rssi value 
-  OLSR_PRINTF(1, "Normalized RSSI: %.3f,  lq->valueBandwidth %d ", fpmtof(nl80211),lq->valueBandwidth);
+  // OLSR_PRINTF(1, "Normalized RSSI: %.3f,  lq->valueBandwidth %d ", fpmtof(nl80211),lq->valueBandwidth);
   
   // if a node is moving away, penalize with 6 times the normalized rssi value
-  if (lq->valueBandwidth != 0 && tauf > 0)
-  {
+  //update ML
+
+  
+  // if (lq->valueBandwidth != 0 && tauf > 0)
+  // {
+  //   cost = fpmadd(cost, fpmmuli(nl80211,20));
+  //   // cost = fpmadd(cost, nl80211);
+  //   // cost =fpmmul(fpmmuli(cost, 5),ftofpm(tauf));
+  //     // OLSR_PRINTF(1, "moving away, ");
+  // }
+  if (prediction==2)
     cost = fpmadd(cost, fpmmuli(nl80211,20));
-    // cost = fpmadd(cost, nl80211);
-    // cost =fpmmul(fpmmuli(cost, 5),ftofpm(tauf));
-      OLSR_PRINTF(1, "moving away, ");
-  }
 
   // if a node is moving in, penalize with 1 factor of the normalized rssi value to differentiate static and moving towards node
-  else if (lq->valueBandwidth != 0 && tauf < 0)
-  { 
-    OLSR_PRINTF(1, "moving towards, ");
-    // cost = fpmadd(cost,ftofpm(tauf*-1.0));
-    cost = fpmadd(cost, fpmmuli(nl80211, 2));
-  }
+  // else if (lq->valueBandwidth != 0 && tauf < 0)
+  // { 
+  //   // OLSR_PRINTF(1, "moving towards, ");
+  //   // cost = fpmadd(cost,ftofpm(tauf*-1.0));
+  //   cost = fpmadd(cost, fpmmuli(nl80211, 2));
+  // }
+  else if(prediction==0)
+    cost = fpmadd(cost, fpmmuli(nl80211,2));
+  
 
-  OLSR_PRINTF(1, " new cost: %.3f\n", fpmtod(cost));
+
+  // OLSR_PRINTF(1, " new cost: %.3f\n", fpmtod(cost));
 
   if (cost > LINK_COST_BROKEN)
     return LINK_COST_BROKEN;
@@ -842,9 +924,13 @@ lq_serialize_hello_lq_pair_ffeth_nl80211(unsigned char *buff, void *ptr)
 #ifdef LINUX_NL80211
   buff[0] = lq->valueBandwidth;
   buff[1] = lq->valueRSSI;
+  // buff[2] = lq->prediction;
+
 #else
   buff[0] = (unsigned char)(0);
   buff[1] = (unsigned char)(0);
+  // buff[2] = (unsigned char)(0);
+
 #endif
   buff[2] = (unsigned char)lq->valueLq;
   buff[3] = (unsigned char)lq->valueNlq;
@@ -860,8 +946,12 @@ lq_deserialize_hello_lq_pair_ffeth_nl80211(const uint8_t **curr, void *ptr)
 #ifdef LINUX_NL80211
   pkt_get_u8(curr, &lq->valueBandwidth);
   pkt_get_u8(curr, &lq->valueRSSI);
+  // pkt_get_u8(curr, &lq->prediction);
+
 #else
   pkt_ignore_u16(curr);
+  // pkt_ignore_u8(curr);
+
 #endif
   pkt_get_u8(curr, &lq->valueLq);
   pkt_get_u8(curr, &lq->valueNlq);
@@ -875,9 +965,13 @@ lq_serialize_tc_lq_pair_ffeth_nl80211(unsigned char *buff, void *ptr)
 #ifdef LINUX_NL80211
   buff[0] = lq->valueBandwidth;
   buff[1] = lq->valueRSSI;
+  // buff[2] = lq->prediction;
+
 #else
   buff[0] = (unsigned char)(0);
   buff[1] = (unsigned char)(0);
+  // buff[2] = (unsigned char)(0);
+
 #endif
   buff[2] = (unsigned char)lq->valueLq;
   buff[3] = (unsigned char)lq->valueNlq;
@@ -893,8 +987,13 @@ lq_deserialize_tc_lq_pair_ffeth_nl80211(const uint8_t **curr, void *ptr)
 #ifdef LINUX_NL80211
   pkt_get_u8(curr, &lq->valueBandwidth);
   pkt_get_u8(curr, &lq->valueRSSI);
+  // pkt_get_u8(curr, &lq->prediction);
+
 #else
   pkt_ignore_u16(curr);
+  // pkt_ignore_u8(curr);
+
+  
 #endif
   pkt_get_u8(curr, &lq->valueLq);
   pkt_get_u8(curr, &lq->valueNlq);

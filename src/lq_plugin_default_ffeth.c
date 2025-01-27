@@ -363,8 +363,9 @@ default_lq_serialize_hello_lq_pair_ffeth(unsigned char *buff, void *ptr)
 
   buff[0] = (unsigned char)(0);
   buff[1] = (unsigned char)(0);
-  buff[2] = (unsigned char)lq->valueLq;
-  buff[3] = (unsigned char)lq->valueNlq;
+  buff[2] = (unsigned char)(1);
+  buff[3] = (unsigned char)lq->valueLq;
+  buff[4] = (unsigned char)lq->valueNlq;
 
   return 4;
 }
@@ -375,6 +376,8 @@ default_lq_deserialize_hello_lq_pair_ffeth(const uint8_t ** curr, void *ptr)
   struct default_lq_ffeth *lq = ptr;
 
   pkt_ignore_u16(curr);
+  pkt_ignore_u8(curr);
+
   pkt_get_u8(curr, &lq->valueLq);
   pkt_get_u8(curr, &lq->valueNlq);
 }
@@ -386,8 +389,9 @@ default_lq_serialize_tc_lq_pair_ffeth(unsigned char *buff, void *ptr)
 
   buff[0] = (unsigned char)(0);
   buff[1] = (unsigned char)(0);
-  buff[2] = (unsigned char)lq->valueLq;
-  buff[3] = (unsigned char)lq->valueNlq;
+  buff[2] = (unsigned char)(1);
+  buff[3] = (unsigned char)lq->valueLq;
+  buff[4] = (unsigned char)lq->valueNlq;
 
   return 4;
 }
@@ -397,7 +401,7 @@ default_lq_deserialize_tc_lq_pair_ffeth(const uint8_t ** curr, void *ptr)
 {
   struct default_lq_ffeth *lq = ptr;
 
-  pkt_ignore_u16(curr);
+  pkt_ignore_u24(curr);
   pkt_get_u8(curr, &lq->valueLq);
   pkt_get_u8(curr, &lq->valueNlq);
 }

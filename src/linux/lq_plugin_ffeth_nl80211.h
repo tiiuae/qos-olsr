@@ -62,6 +62,7 @@
 #define LQ_FFETH_WINDOW 32
 #define RSSI_WINDOW 16
 #define TREND_WINDOW 10
+#define BUFFER_WINDOW 4
 
 #define LQ_FFETH_QUICKSTART_INIT 4
 
@@ -71,13 +72,14 @@ struct lq_ffeth {
 #ifdef LINUX_NL80211
   uint8_t valueBandwidth;
   uint8_t valueRSSI;
+  // uint8_t prediction;
 #endif
 };
 
 struct lq_ffeth_hello {
   struct lq_ffeth smoothed_lq;
   struct lq_ffeth lq;
-  uint8_t windowSize, activePtr,twindowSize,tactivePtr,rwindowSize,ractivePtr;
+  uint8_t windowSize, activePtr,twindowSize,tactivePtr,rwindowSize,ractivePtr, bufferPtr;
   uint16_t last_seq_nr;
   uint16_t missed_hellos;
   bool perfect_eth;
@@ -85,10 +87,15 @@ struct lq_ffeth_hello {
   //update
   uint8_t rssi[RSSI_WINDOW], lqWin[LQ_FFETH_WINDOW];
   int8_t trend_w[TREND_WINDOW];
+  int8_t trend_buffer[BUFFER_WINDOW];
+  float tau_buffer[BUFFER_WINDOW];
   int trend_counter;
   // this window is for storing the trend values
+  int8_t trend_prev;
+  float tau_prev;
   int trend;
   float tau;
+  // uint8_t prediction;
 };
 
 extern struct lq_handler lq_etx_ffeth_nl80211_handler;

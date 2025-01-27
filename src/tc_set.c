@@ -449,7 +449,7 @@ olsr_calc_tc_edge_entry_etx(struct tc_edge_entry *tc_edge)
 
   // if there's a trend, set the neighbor cost as the current cost 
   // sampledLC is usually in the range up to 10 or 11 based on the max penalty value of 7 and the LQ cost (converges to 1)
-  if(lq->valueBandwidth!=0){
+  if((lq->valueBandwidth & 0x03)!=1){
       tc_edge->cost = sampledLC;
   }	
   // else if we don't have a trend, degrade the cost gradually 

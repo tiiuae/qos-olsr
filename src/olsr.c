@@ -71,6 +71,7 @@
 #include "gateway.h"
 #include "duplicate_handler.h"
 #include "olsr_random.h"
+#include "./linux/data_collection.h"
 
 #include <stdarg.h>
 #include <signal.h>
@@ -260,11 +261,6 @@ olsr_process_changes(void)
     olsr_print_heads_set();
     
     olsr_print_mprs_set();
-    olsr_print_neighbor_table();
-
-    if (olsr_cnf->debug_level > 3) {
-      olsr_print_tc_table();
-    }
   }
 
   for (tmp_pc_list = pcf_list; tmp_pc_list != NULL; tmp_pc_list = tmp_pc_list->next) {
@@ -458,6 +454,8 @@ set_buffer_timer(struct interface_olsr *ifn)
 }
 
 
+
+
 void
 olsr_init_willingness(void)
 {
@@ -578,6 +576,20 @@ olsr_init_calculate_head(void)
    olsr_start_timer(atime * MSEC_PER_SEC, 2, true, &olsr_calculate_head, NULL, 0);
 
 }
+
+
+void 
+olsr_init_prediction(void)
+{
+
+  unsigned int atime = 1;
+  // olsr_start_timer(4 * MSEC_PER_SEC, 2, OLSR_TIMER_ONESHOT, &add_and_predict, NULL, 0);
+  olsr_start_timer(atime * MSEC_PER_SEC, 2, true, &add_and_predict, NULL, 0);
+
+
+}
+
+
 //update
 void
 olsr_print_is_mpr(void)

@@ -657,6 +657,12 @@ olsr_cnf->is_head = 0;
   //  olsr_init_print_mprs();
     
     olsr_init_calculate_head();
+   #ifdef LINUX_NL80211
+    olsr_init_prediction();
+   #endif
+    
+    
+    
   /* initialise net */
   init_net();
 
@@ -790,6 +796,8 @@ olsr_cnf->is_head = 0;
   signal(SIGUSR1, SIG_IGN);
   signal(SIGUSR2, SIG_IGN);
 #endif /* _WIN32 */
+
+
 
 
   /* Starting scheduler */

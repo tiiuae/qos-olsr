@@ -370,6 +370,8 @@ default_lq_deserialize_hello_lq_pair_ff(const uint8_t ** curr, void *ptr)
   pkt_get_u8(curr, &lq->valueLq);
   pkt_get_u8(curr, &lq->valueNlq);
   pkt_ignore_u16(curr);
+  pkt_ignore_u8(curr);
+
 }
 
 static int

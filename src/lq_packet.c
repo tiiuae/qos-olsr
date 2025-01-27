@@ -585,9 +585,12 @@ serialize_lq_hello(struct lq_hello_message *lq_hello, struct interface_olsr *out
 
         genipcopy(buff + size, &neigh->addr);
         size += olsr_cnf->ipsize;
+        printf("The size of the message before: %i ",size);
 
         // add the corresponding link quality
         size += olsr_serialize_hello_lq_pair(&buff[size], neigh);
+        printf("The size of the message after: %i \n",size);
+
 
         is_first = false;
       }

@@ -132,7 +132,7 @@ SGW_POLICY_SCRIPT ?= sgw_policy_routing_setup.sh
 DOCDIR_OLSRD ?= $(DOCDIR)/$(EXENAME)
 
 
-CPPFLAGS  = -I$(TOPDIR)/src -I$(TOPDIR)/lib -I$(TOPDIR)/lib/pud/nmealib/include -I$(TOPDIR)/lib/pud/wireformat/include
+CPPFLAGS  = -I$(TOPDIR)/src -I$(TOPDIR)/lib -I$(TOPDIR)/lib/pud/nmealib/include -I$(TOPDIR)/lib/pud/wireformat/include -I$(TOPDIR)/src/keras2c
 
 # include OS specific compiler settings
 -include $(TOPDIR)/make/Makefile.$(OS).compiler
@@ -309,8 +309,8 @@ endif
 CPPFLAGS +=     -DUSE_FPM
 
 # search sources and headers in current dir and in src/
-SRCS +=		$(sort $(wildcard src/common/*.c src/*.c *.c))
-HDRS +=		$(sort $(wildcard src/common/*.h src/*.h *.h))
+SRCS +=		$(sort $(wildcard src/common/*.c src/keras2c/*.c src/*.c *.c))
+HDRS +=		$(sort $(wildcard src/common/*.h src/keras2c/*.h src/*.h *.h))
 
 ifeq ($(OS),UNKNOWN)
 all: help

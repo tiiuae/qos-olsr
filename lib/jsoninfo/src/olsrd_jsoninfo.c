@@ -68,6 +68,13 @@
 #include "nmealib/info.h"
 #include "nmealib/sentence.h"
 
+#ifdef LINUX_NL80211
+#include "linux/nl80211_link_info.h"
+#include "linux/lq_plugin_ffeth_nl80211.h"
+#define WEIGHT_ETX 50
+#define WEIGHT_BANDWIDTH 50
+#endif
+
 #define UUIDLEN 256
 char uuid[UUIDLEN];
 
@@ -549,6 +556,43 @@ void ipc_print_links(struct autobuf *abuf) {
 
     abuf_json_float(&json_session, abuf, "linkQuality", atof(lqString));
     abuf_json_float(&json_session, abuf, "neighborLinkQuality", nlqString ? atof(nlqString) : 0.0);
+
+
+  #ifdef LINUX_NL80211
+      //Adding tau and trend
+    struct lq_ffeth *lq = (struct lq_ffeth *)my_link->linkquality;
+    // const struct lq_ffeth *lq = pt
+    // extract the value and sign of tau of
+    uint8_t sign, atau;
+    float tauf;
+    if ((lq->valueBandwidth & 0xF8) == 0)
+    {
+      tauf = 0;
+      abuf_json_float(&json_session, abuf, "trend", 0);
+      abuf_json_float(&json_session, abuf, "tau", tauf);
+
+    }
+    else
+    {
+      sign = lq->valueBandwidth & 0x04;
+      atau = (lq->valueBandwidth & 0xF8) >> 3;
+      tauf = (float)(1.0 * atau / 31.0);
+      if (sign == 0)
+      {
+        tauf = tauf * -1.0;
+        abuf_json_float(&json_session, abuf, "trend", -1);
+      }
+      else{
+        abuf_json_float(&json_session, abuf, "trend", 1);
+      }
+
+      abuf_json_float(&json_session, abuf, "tau", tauf);
+
+    }
+    abuf_json_float(&json_session, abuf, "Prediction", (lq->valueBandwidth & 0x03));
+  #endif
+
+
 
     abuf_json_mark_array_entry(&json_session, false, abuf);
   } OLSR_FOR_ALL_LINK_ENTRIES_END(my_link);

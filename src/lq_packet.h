@@ -162,12 +162,17 @@ pkt_get_u32(const uint8_t ** p, uint32_t * var)
   *var = ntohl(**((const uint32_t **)p));
   *p += sizeof(uint32_t);
 }
+
+
 static INLINE void
 pkt_get_s8(const uint8_t ** p, int8_t * var)
 {
   *var = *(const int8_t *)(*p);
   *p += sizeof(int8_t);
 }
+
+
+
 static INLINE void
 pkt_get_s16(const uint8_t ** p, int16_t * var)
 {
@@ -210,6 +215,12 @@ pkt_ignore_u16(const uint8_t ** p)
   *p += sizeof(uint16_t);
 }
 static INLINE void
+pkt_ignore_u24(const uint8_t ** p)
+{
+  *p += sizeof(uint16_t);
+  *p += sizeof(uint8_t);
+}
+static INLINE void
 pkt_ignore_u32(const uint8_t ** p)
 {
   *p += sizeof(uint32_t);
@@ -219,6 +230,15 @@ pkt_ignore_s8(const uint8_t ** p)
 {
   *p += sizeof(int8_t);
 }
+
+static INLINE void
+pkt_ignore_s24(const uint8_t ** p)
+{
+  *p += sizeof(int16_t);
+  *p += sizeof(int8_t);
+
+}
+
 static INLINE void
 pkt_ignore_s16(const uint8_t ** p)
 {
@@ -252,6 +272,7 @@ pkt_put_u16(uint8_t ** p, uint16_t var)
   **((uint16_t **)p) = htons(var);
   *p += sizeof(uint16_t);
 }
+
 static INLINE void
 pkt_put_u32(uint8_t ** p, uint32_t var)
 {
@@ -270,6 +291,7 @@ pkt_put_s16(uint8_t ** p, int16_t var)
   **((int16_t **)p) = htons(var);
   *p += sizeof(int16_t);
 }
+
 static INLINE void
 pkt_put_s32(uint8_t ** p, int32_t var)
 {

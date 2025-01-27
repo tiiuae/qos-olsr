@@ -96,6 +96,8 @@ uint8_t olsr_calculate_willingness(void);
 //update
 float olsr_calculate_qos(void);
 
+void olsr_init_prediction(void);
+
 const char *olsr_msgtype_to_string(uint8_t);
 
 const char *olsr_link_to_string(uint8_t);
