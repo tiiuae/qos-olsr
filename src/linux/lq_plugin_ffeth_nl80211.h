@@ -60,6 +60,9 @@
 #define LQ_ALGORITHM_ETX_FFETH_NL80211_NAME "etx_ffeth_nl80211"
 
 #define LQ_FFETH_WINDOW 32
+#define RSSI_WINDOW 16
+#define TREND_WINDOW 10
+
 #define LQ_FFETH_QUICKSTART_INIT 4
 
 struct lq_ffeth {
@@ -74,11 +77,18 @@ struct lq_ffeth {
 struct lq_ffeth_hello {
   struct lq_ffeth smoothed_lq;
   struct lq_ffeth lq;
-  uint8_t windowSize, activePtr;
+  uint8_t windowSize, activePtr,twindowSize,tactivePtr,rwindowSize,ractivePtr;
   uint16_t last_seq_nr;
   uint16_t missed_hellos;
   bool perfect_eth;
   uint16_t received[LQ_FFETH_WINDOW], total[LQ_FFETH_WINDOW];
+  //update
+  uint8_t rssi[RSSI_WINDOW], lqWin[LQ_FFETH_WINDOW];
+  int8_t trend_w[TREND_WINDOW];
+  int trend_counter;
+  // this window is for storing the trend values
+  int trend;
+  float tau;
 };
 
 extern struct lq_handler lq_etx_ffeth_nl80211_handler;
